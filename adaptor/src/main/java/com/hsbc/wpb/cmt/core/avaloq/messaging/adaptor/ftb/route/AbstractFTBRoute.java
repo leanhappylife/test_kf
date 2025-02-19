@@ -64,7 +64,7 @@ public abstract class AbstractFTBRoute extends RouteBuilder {
                 // 将处理后的消息转换为 XML
 //                .marshal().jacksonxml()
                 // 发送到 MQ 队列
-                .to("jms:queue:" + getDestinationQueue())
+//                .to("jms:queue:" + getDestinationQueue())
                 .log("FTB Sent message to MQ (Queue: " + getDestinationQueue() + "): ${body}");
     }
 
