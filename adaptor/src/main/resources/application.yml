@@ -1,0 +1,74 @@
+kafka:
+  ftb:
+    equity:
+      broker: "equity.kafka.broker:9092"
+      consumer:
+        groupId: "ftbEquityConsumerGroup"
+      topics:
+        ftb-equity-topic-1:
+          headers: "equityHeader1=equityValue1,equityHeader2=equityValue2"
+          processor: "equityCustomProcessor,genericProcessor"
+          concurrency: 3
+        ftb-equity-topic-2:
+          headers: "equityHeader1=equityValue3,equityHeader2=equityValue4"
+          processor: "genericProcessor"
+          concurrency: 2
+    fund:
+      broker: "fund.kafka.broker:9092"
+      consumer:
+        groupId: "ftbFundConsumerGroup"
+      topics:
+        ftb-fund-topic-1:
+          headers: "fundHeader1=fundValue1,fundHeader2=fundValue2"
+          processor: "fundCustomProcessor,genericProcessor"
+          concurrency: 2
+        ftb-fund-topic-2:
+          headers: "fundHeader1=fundValue3,fundHeader2=fundValue2"
+          processor: "fundCustomProcessor"
+          concurrency: 1
+
+  btf:
+    equity:
+      broker: "equity.kafka.broker:9092"
+      producer:
+        acks: all
+        retries: 3
+        linger.ms: 10
+        securityProtocol: SASL_SSL
+        saslMechanism: SCRAM-SHA-512
+        saslJaasConfig: "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"equity_user\" password=\"equity_pass\";"
+      topics:
+        btf-equity-topic-1:
+          headers: "equityHeader1=equityValue1,equityHeader2=equityValue2"
+          processor: "equityCustomProcessor,genericProcessor"
+          topicMapping: Equity
+          concurrency: 1
+        btf-equity-topic-2:
+          headers: "equityHeader1=equityValue3,equityHeader2=equityValue4"
+          processor: "equityCustomProcessor,genericProcessor"
+          topicMapping: Fund4
+    fund:
+      broker: "fund.kafka.broker:9092"
+      producer:
+        acks: all
+        retries: 3
+        linger.ms: 10
+        securityProtocol: SASL_SSL
+        saslMechanism: SCRAM-SHA-512
+        saslJaasConfig: "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"fund_user\" password=\"fund_pass\";"
+      topics:
+        btf-fund-topic-1:
+          headers: "fundHeader1=fundValue1,fundHeader2=fundValue2"
+          processor: "fundCustomProcessor,genericProcessor"
+          topicMapping: Fund
+          concurrency: 1
+        btf-fund-topic-2:
+          headers: "fundHeader1=fundValue3,fundHeader2=fundValue2"
+          processor: "fundCustomProcessor"
+          topicMapping: Equity2
+      topicmapping:
+        Fund: "btf-fund-topic-1"
+        Equity2: "btf-fund-topic-2"
+
+mq:
+  queue: "commonQueue"
