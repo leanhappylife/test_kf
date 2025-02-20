@@ -66,9 +66,7 @@ kafka:
           headers: "fundHeader1=fundValue3,fundHeader2=fundValue2"
           processor: "fundCustomProcessor"
           topicMapping: Equity2
-      topicmapping:
-        Fund: "btf-fund-topic-1"
-        Equity2: "btf-fund-topic-2"
+
 
 mq:
   queue: "commonQueue"
