@@ -1,78 +1,96 @@
-kafka:
-  ftb:
+# IBM MQ Global Configuration (mapped by IbmMqProperties)
+ibm:
+  mq:
+    queueManager: "QM1"
+    channel: "DEV.APP.SVRCONN"
+    connName: "localhost(1414)"
+    user: "app"
+    password: "pas"
+    queue: "commonQueue"
+
+# ===============================
+# 1) Kafka Common Configuration
+# ===============================
+kafkaConfig:
+  kafka_1:
+    bootstrap-servers: "xx:9092"
+    security.protocol: "SASL_SSL"
+    sasl.mechanism: "SCRAM-SHA-512"
+    sasl.jaas.config: >
+      org.apache.kafka.common.security.scram.ScramLoginModule required
+      username="kafka_consumer_user"
+      password="YOUR_CONSUMER_PASSWORD";
+    consumer:
+      group-id: "share-broker-order-domain-event"
+      auto-offset-reset: "earliest"
+    producer:
+      client-id: "xx-service"
+      acks: "all"
+      retries: 0
+
+# ===============================
+# 2) Unified Kafka Wrapper Configuration
+# ===============================
+kafkaWrapper:
+  sharedPoolSize: 20
+  products:
     equity:
-      broker: "equity.kafka.broker:9092"
+      broker: "${kafkaConfig.kafka_1.bootstrap-servers}"
+      security:
+        protocol: "${kafkaConfig.kafka_1.security.protocol}"
+        saslMechanism: "${kafkaConfig.kafka_1.sasl.mechanism}"
+        saslJaasConfig: "${kafkaConfig.kafka_1.sasl.jaas.config}"
       consumer:
-        groupId: "ftbEquityConsumerGroup"
+        groupId: "${kafkaConfig.kafka_1.consumer.group-id}"
+        autoOffsetReset: "${kafkaConfig.kafka_1.consumer.auto-offset-reset}"
       topics:
-        ftb-equity-topic-1:
-          headers: "equityHeader1=equityValue1,equityHeader2=equityValue2"
-          processor: "equityCustomProcessor,genericProcessor"
+        topic_1:
+          name: "equity-topic-wrapper"
+          headers:
+            header1: value1
+            header2: value2
           concurrency: 3
-        ftb-equity-topic-2:
-          headers: "equityHeader1=equityValue3,equityHeader2=equityValue4"
-          processor: "genericProcessor"
-          concurrency: 2
+          eventProcessorMapping:
+            orderCreated: "equityCustomProcessor,genericProcessor"
+            orderCancelled: "genericProcessor"
+        topic_2:
+          name: "topic_2"
+          headers:
+            header1: value1
+            header2: value2
+          concurrency: 3
+          eventProcessorMapping:
+            orderCreated2: "equityCustomProcessor,genericProcessor"
+            orderCancelled2: "genericProcessor"
     fund:
-      broker: "fund.kafka.broker:9092"
+      broker: "yy:9092"
+      security:
+        protocol: "SASL_SSL"
+        saslMechanism: "SCRAM-SHA-512"
+        saslJaasConfig: >
+          org.apache.kafka.common.security.scram.ScramLoginModule required
+          username="fund_kafka_user"
+          password="YOUR_FUND_PASSWORD";
       consumer:
-        groupId: "ftbFundConsumerGroup"
+        groupId: "fund-group"
+        autoOffsetReset: "latest"
       topics:
-        ftb-fund-topic-1:
-          headers: "fundHeader1=fundValue1,fundHeader2=fundValue2"
-          processor: "fundCustomProcessor,genericProcessor"
+        topic_1:
+          name: "fund-topic-wrapper"
+          headers:
+            headerA: foo
+            headerB: bar
           concurrency: 2
-        ftb-fund-topic-2:
-          headers: "fundHeader1=fundValue3,fundHeader2=fundValue2"
-          processor: "fundCustomProcessor"
-          concurrency: 1
+          eventProcessorMapping:
+            subscriptionCreated: "fundCustomProcessor,genericProcessor"
+            subscriptionCancelled: "genericProcessor"
 
-  btf:
-    equity:
-      broker: "equity.kafka.broker:9092"
-      producer:
-        acks: all
-        retries: 3
-        linger.ms: 10
-        securityProtocol: SASL_SSL
-        saslMechanism: SCRAM-SHA-512
-        saslJaasConfig: "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"equity_user\" password=\"equity_pass\";"
-      topics:
-        btf-equity-topic-1:
-          headers: "equityHeader1=equityValue1,equityHeader2=equityValue2"
-          processor: "equityCustomProcessor,genericProcessor"
-          topicMapping: Equity
-          concurrency: 1
-        btf-equity-topic-2:
-          headers: "equityHeader1=equityValue3,equityHeader2=equityValue4"
-          processor: "equityCustomProcessor,genericProcessor"
-          topicMapping: Fund4
-    fund:
-      broker: "fund.kafka.broker:9092"
-      producer:
-        acks: all
-        retries: 3
-        linger.ms: 10
-        securityProtocol: SASL_SSL
-        saslMechanism: SCRAM-SHA-512
-        saslJaasConfig: "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"fund_user\" password=\"fund_pass\";"
-      topics:
-        btf-fund-topic-1:
-          headers: "fundHeader1=fundValue1,fundHeader2=fundValue2"
-          processor: "fundCustomProcessor,genericProcessor"
-          topicMapping: Fund
-          concurrency: 1
-        btf-fund-topic-2:
-          headers: "fundHeader1=fundValue3,fundHeader2=fundValue2"
-          processor: "fundCustomProcessor"
-          topicMapping: Equity2
-
-
-mq:
-  queue: "commonQueue"
-
-
-
-camel:
-  springboot:
-    main-run-controller: true
+# ===============================
+# 3) Kafka Business Configuration for Dispatcher (MQ -> Kafka)
+# ===============================
+kafkaDispatcher:
+  equity:
+    broker: "${kafkaConfig.kafka_1.bootstrap-servers}"
+    sourceQueue: "equityDispatcherQueue"
+    targetTopic: "equity-topic-dispatcher"
+    concurrency: 2
