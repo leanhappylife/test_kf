@@ -1,0 +1,46 @@
+# IBM MQ Global Configuration (mapped by IbmMqProperties)
+ibm:
+  mq:
+    queueManager: "QM1"
+    channel: "DEV.APP.SVRCONN"
+    connName: "localhost(1414)"
+    user: "app"
+    password: "pass"
+    queue: "commonQueue"
+
+# Kafka Wrapper Configuration (mapped by ProductConfig)
+kafkaWrapper:
+  defaultThreadPool:
+    coreSize: 5
+    maxSize: 10
+    keepAliveTime: 60
+    queueCapacity: 1000
+  equity:
+    broker: "localhost:9092"
+    targetQueue: "equityQueue"
+    topic:
+      name: "equityTopic"
+      concurrency: 2
+      consumer:
+        groupId: "equityGroup"
+        autoOffsetReset: "earliest"
+      eventProcessorMapping:
+        trade: "equityCustomWrapperMessageProcessor"
+        quote: "genericWrapperMessageProcessor"
+  fund:
+    broker: "localhost:9092"
+    targetQueue: "fundQueue"
+    topic:
+      name: "fundTopic"
+      concurrency: 3
+      consumer:
+        groupId: "fundGroup"
+        autoOffsetReset: "earliest"
+
+# Kafka Dispatcher Configuration
+kafkaDispatcher:
+  equity:
+    broker: "localhost:9092"
+    sourceQueue: "equityQueue"
+    targetTopic: "dispatcherEquityTopic"
+    concurrency: 2
