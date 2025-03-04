@@ -8,39 +8,92 @@ ibm:
     password: "pass"
     queue: "commonQueue"
 
-# Kafka Wrapper Configuration (mapped by ProductConfig)
-kafkaWrapper:
-  defaultThreadPool:
-    coreSize: 5
-    maxSize: 10
-    keepAliveTime: 60
-    queueCapacity: 1000
-  equity:
-    broker: "localhost:9092"
-    targetQueue: "equityQueue"
-    topic:
-      name: "equityTopic"
-      concurrency: 2
-      consumer:
-        groupId: "equityGroup"
-        autoOffsetReset: "earliest"
-      eventProcessorMapping:
-        trade: "equityCustomWrapperMessageProcessor"
-        quote: "genericWrapperMessageProcessor"
-  fund:
-    broker: "localhost:9092"
-    targetQueue: "fundQueue"
-    topic:
-      name: "fundTopic"
-      concurrency: 3
-      consumer:
-        groupId: "fundGroup"
-        autoOffsetReset: "earliest"
+# Kafka Common Configuration
+kafkaConfig:
+  kafka-1:
+    bootstrap-servers: "xx:9092"
+    security.protocol: "SASL_SSL"
+    sasl.mechanism: "SCRAM-SHA-512"
+    sasl.jaas.config: >
+      org.apache.kafka.common.security.scram.ScramLoginModule required
+      username="kafka_consumer_user"
+      password="YOUR_CONSUMER_PASSWORD";
+    consumers:
+      consumer-1:
+        group-id: "share-broker-order-domain-event"
+        auto-offset-reset: "earliest"
+      consumer-2:
+        group-id: "share-2-domain-event"
+        auto-offset-reset: "earliest"
+    producers:
+      producer-1:
+        client-id: "xx-service"
+        acks: "all"
+        retries: 0
 
-# Kafka Dispatcher Configuration
+# Unified Kafka Wrapper Configuration
+kafka-wrapper:
+  default-thread-pool:
+    coreSize: 10
+    maxSize: 50
+    keepAliveTime: 60
+    queueCapacity: 100
+  sharedPoolSize: 20
+  products:
+    equity:
+      broker: "${kafkaConfig.kafka-1.bootstrap-servers}"
+      security:
+        protocol: "${kafkaConfig.kafka-1.security.protocol}"
+        saslMechanism: "${kafkaConfig.kafka-1.sasl.mechanism}"
+        saslJaasConfig: "${kafkaConfig.kafka-1.sasl.jaas.config}"
+      consumer:
+        groupId: "${kafkaConfig.kafka-1.consumers.consumer-1.group-id}"
+        autoOffsetReset: "${kafkaConfig.kafka-1.consumers.consumer-1.auto-offset-reset}"
+      threadPool:
+        coreSize: 15
+        maxSize: 60
+        keepAliveTime: 120
+        queueCapacity: 200
+      topics:
+        topic-1:
+          name: "equity-topic-wrapper"
+          concurrency: 3
+          threadPool:
+            coreSize: 5
+            maxSize: 20
+            keepAliveTime: 120
+            queueCapacity: 100
+          eventProcessorMapping:
+            orderCreated: "equityCustomProcessor,genericProcessor"
+            orderCancelled: "genericProcessor"
+    fund:
+      broker: "yy:9092"
+      security:
+        protocol: "SASL_SSL"
+        saslMechanism: "SCRAM-SHA-512"
+        saslJaasConfig: >
+          org.apache.kafka.common.security.scram.ScramLoginModule required
+          username="fund_kafka_user"
+          password="YOUR_FUND_PASSWORD";
+      consumer:
+        groupId: "${kafkaConfig.kafka-1.consumers.consumer-2.group-id}"
+        autoOffsetReset: "${kafkaConfig.kafka-1.consumers.consumer-2.auto-offset-reset}"
+      topics:
+        topic-1:
+          name: "fund-topic-wrapper"
+          concurrency: 2
+          threadPool:
+            maxSize: 3
+            queueCapacity: 80
+            keepAliveTime: 60
+          eventProcessorMapping:
+            subscriptionCreated: "fundCustomProcessor,genericProcessor"
+            subscriptionCancelled: "genericProcessor"
+
+# Kafka Business Configuration for Dispatcher (MQ -> Kafka)
 kafkaDispatcher:
   equity:
-    broker: "localhost:9092"
-    sourceQueue: "equityQueue"
-    targetTopic: "dispatcherEquityTopic"
+    broker: "${kafkaConfig.kafka-1.bootstrap-servers}"
+    sourceQueue: "equityDispatcherQueue"
+    targetTopic: "equity-topic-dispatcher"
     concurrency: 2

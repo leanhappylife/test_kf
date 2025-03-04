@@ -14,7 +14,7 @@ import java.util.Map;
  * Configuration class for all product-specific wrapper settings.
  */
 @Component
-@ConfigurationProperties(prefix = "kafkaWrapper")
+@ConfigurationProperties(prefix = "kafka-wrapper")
 @Getter
 @Setter
 public class ProductConfig {

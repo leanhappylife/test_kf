@@ -5,9 +5,9 @@ import org.springframework.stereotype.Component;
 import x.messaging.adaptor.wrapper.common.config.ThreadPoolConfig;
 
 /**
- * Configuration class for default thread pool settings, mapped from application.yml under "kafkaWrapper.defaultThreadPool".
+ * Configuration class for default thread pool settings, mapped from application.yml under "kafka-wrapper.default-thread-pool".
  */
 @Component
-@ConfigurationProperties(prefix = "kafkaWrapper.defaultThreadPool")
+@ConfigurationProperties(prefix = "kafka-wrapper.default-thread-pool")
 public class DefaultThreadPoolConfig extends ThreadPoolConfig {
 }
